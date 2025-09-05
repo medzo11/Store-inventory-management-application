@@ -1,0 +1,2472 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة المخزون الذكي</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --secondary: #7209b7;
+            --success: #4cc9f0;
+            --danger: #e63946;
+            --warning: #fca311;
+            --info: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --bg-color: #f5f7fb;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --sidebar-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        /* Language direction changes */
+        body.rtl {
+            direction: rtl;
+        }
+        
+        body.ltr {
+            direction: ltr;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        body.rtl .sidebar {
+            right: 0;
+        }
+        
+        body.ltr .sidebar {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h2 {
+            margin: 10px 0 5px;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border-right: 4px solid transparent;
+        }
+        
+        body.rtl .menu-item {
+            border-right: 4px solid transparent;
+        }
+        
+        body.ltr .menu-item {
+            border-left: 4px solid transparent;
+        }
+        
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.rtl .menu-item:hover {
+            border-right-color: var(--success);
+        }
+        
+        body.ltr .menu-item:hover {
+            border-left-color: var(--success);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        body.rtl .menu-item.active {
+            border-right-color: white;
+        }
+        
+        body.ltr .menu-item.active {
+            border-left-color: white;
+        }
+
+        .menu-item i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        body.rtl .menu-item i {
+            margin-left: 10px;
+        }
+        
+        body.ltr .menu-item i {
+            margin-right: 10px;
+        }
+
+        .main-content {
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+        
+        body.rtl .main-content {
+            margin-right: var(--sidebar-width);
+        }
+        
+        body.ltr .main-content {
+            margin-left: var(--sidebar-width);
+        }
+
+        .topbar {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--light);
+            border-radius: 50px;
+            padding: 8px 20px;
+            width: 300px;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            padding: 5px;
+            outline: none;
+        }
+        
+        body.rtl .search-box i {
+            margin-left: 10px;
+        }
+        
+        body.ltr .search-box i {
+            margin-right: 10px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        body.rtl .user-profile img {
+            margin-left: 10px;
+        }
+        
+        body.ltr .user-profile img {
+            margin-right: 10px;
+        }
+
+        .dashboard {
+            padding: 30px;
+        }
+
+        .section-title {
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            color: var(--dark);
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px;
+        }
+        
+        body.rtl .section-title::after {
+            right: 0;
+        }
+        
+        body.ltr .section-title::after {
+            left: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+        
+        body.rtl .stat-icon {
+            margin-left: 15px;
+        }
+        
+        body.ltr .stat-icon {
+            margin-right: 15px;
+        }
+        
+        .icon-primary {
+            background: rgba(67, 97, 238, 0.15);
+            color: var(--primary);
+        }
+
+        .icon-success {
+            background: rgba(76, 201, 240, 0.15);
+            color: var(--success);
+        }
+
+        .icon-warning {
+            background: rgba(252, 163, 17, 0.15);
+            color: var(--warning);
+        }
+
+        .icon-danger {
+            background: rgba(230, 57, 70, 0.15);
+            color: var(--danger);
+        }
+
+        .stat-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-info p {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .view-all {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+        
+        body.ltr .data-table th, body.ltr .data-table td {
+            text-align: left;
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .data-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .product-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-available {
+            background: rgba(76, 201, 240, 0.15);
+            color: var(--success);
+        }
+
+        .status-low {
+            background: rgba(252, 163, 17, 0.15);
+            color: var(--warning);
+        }
+
+        .status-sold {
+            background: rgba(230, 57, 70, 0.15);
+            color: var(--danger);
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        body.rtl .action-btn {
+            margin-left: 5px;
+        }
+        
+        body.ltr .action-btn {
+            margin-right: 5px;
+        }
+
+        .btn-edit {
+            background: rgba(67, 97, 238, 0.15);
+            color: var(--primary);
+        }
+
+        .btn-edit:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-sell {
+            background: rgba(76, 201, 240, 0.15);
+            color: var(--success);
+        }
+
+        .btn-sell:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-delete {
+            background: rgba(230, 57, 70, 0.15);
+            color: var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-print {
+            background: rgba(108, 117, 125, 0.15);
+            color: var(--gray);
+        }
+
+        .btn-print:hover {
+            background: var(--gray);
+            color: white;
+        }
+
+        .sales-list {
+            list-style: none;
+        }
+
+        .sale-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sale-item:last-child {
+            border-bottom: none;
+        }
+
+        .sale-info {
+            flex: 1;
+        }
+
+        .sale-info h4 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .sale-info p {
+            color: var(--gray);
+            font-size: 0.85rem;
+        }
+
+        .sale-amount {
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-primary i {
+            margin-left: 8px;
+        }
+        
+        body.ltr .btn-primary i {
+            margin-left: 0;
+            margin-right: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            height: 250px;
+            margin-top: 15px;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            width: 100%;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .login-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .alert-success {
+            background: rgba(76, 201, 240, 0.15);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+        
+        body.ltr .alert-success {
+            border-right: 4px solid var(--success);
+            border-left: none;
+        }
+
+        .alert-error {
+            background: rgba(230, 57, 70, 0.15);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+        }
+        
+        body.ltr .alert-error {
+            border-right: 4px solid var(--danger);
+            border-left: none;
+        }
+
+        .alert i {
+            font-size: 1.2rem;
+        }
+        
+        body.rtl .alert i {
+            margin-left: 10px;
+        }
+        
+        body.ltr .alert i {
+            margin-right: 10px;
+        }
+        
+        .toggle-language {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark);
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                font-family: 'Cairo', 'Segoe UI', sans-serif;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                transform: translateX(100%);
+                width: 280px;
+            }
+            
+            body.ltr .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-right: 0;
+                margin-left: 0;
+            }
+
+            .topbar {
+                padding: 15px;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-box {
+                width: 200px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .dashboard {
+                padding: 15px;
+            }
+
+            .user-profile span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="rtl">
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2 data-lang="login_title">تسجيل الدخول</h2>
+                <p data-lang="login_subtitle">مرحباً بك في نظام إدارة المخزون</p>
+            </div>
+            
+            <div id="loginMessage"></div>
+            
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username" data-lang="username_label">اسم المستخدم</label>
+                    <input type="text" id="username" class="form-control" placeholder="أدخل اسم المستخدم" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" data-lang="password_label">كلمة المرور</label>
+                    <input type="password" id="password" class="form-control" placeholder="أدخل كلمة المرور" required>
+                </div>
+                
+                <button type="submit" class="login-btn" data-lang="login_button">تسجيل الدخول</button>
+            </form>
+        </div>
+        <button class="toggle-language" id="toggleLanguageBtn">English</button>
+    </div>
+
+    <div id="appContainer" style="display: none; width: 100%;">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div style="width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-boxes" style="font-size: 2.5rem; color: var(--primary);"></i>
+                </div>
+                <h2 data-lang="app_title">المخزون الذكي</h2>
+                <p data-lang="app_subtitle">نظام إدارة متكامل</p>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span data-lang="dashboard_menu">لوحة التحكم</span>
+                </div>
+                <div class="menu-item" data-page="products">
+                    <i class="fas fa-box"></i>
+                    <span data-lang="products_menu">إدارة المنتجات</span>
+                </div>
+                <div class="menu-item" data-page="sales">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span data-lang="sales_menu">المبيعات</span>
+                </div>
+                <div class="menu-item" data-page="reports">
+                    <i class="fas fa-chart-line"></i>
+                    <span data-lang="reports_menu">التقارير والإحصائيات</span>
+                </div>
+                <div class="menu-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span data-lang="settings_menu">الإعدادات</span>
+                </div>
+                <div class="menu-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span data-lang="logout_menu">تسجيل الخروج</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="topbar">
+                <span class="mobile-menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></span>
+                <div class="search-box">
+                    <i class="fas fa-search" style="color: var(--gray);"></i>
+                    <input type="text" placeholder="ابحث عن منتج أو عملية بيع..." id="searchInput" data-lang-placeholder="search_placeholder">
+                </div>
+                
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=مدير+المخزون&background=4361ee&color=fff" alt="صورة المستخدم">
+                    <span id="userWelcome">مرحباً، مدير النظام</span>
+                    <i class="fas fa-bell" style="margin-left: 20px; color: var(--gray); cursor: pointer;" id="notificationsBtn"></i>
+                </div>
+            </div>
+
+            <section class="dashboard" id="dashboardPage">
+                <h2 class="section-title" data-lang="dashboard_title">لوحة تحكم المخزون</h2>
+                
+                <div id="dashboardAlerts"></div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-primary">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalProducts">0</h3>
+                            <p data-lang="total_products_stat">إجمالي المنتجات</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalSales">0</h3>
+                            <p data-lang="total_sales_stat">المبيعات اليوم</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon icon-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="lowStockCount">0</h3>
+                            <p data-lang="low_stock_stat">منتجات منخفضة المخزون</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon icon-danger">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="outOfStockCount">0</h3>
+                            <p data-lang="out_of_stock_stat">منتجات غير متوفرة</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-lang="recent_products_title">أحدث المنتجات</h3>
+                            <a href="#" class="view-all" id="viewAllProducts" data-lang="view_all">عرض الكل</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th data-lang="product_table_product_header">المنتج</th>
+                                        <th data-lang="product_table_price_header">السعر</th>
+                                        <th data-lang="product_table_quantity_header">الكمية</th>
+                                        <th data-lang="product_table_location_header">المكان</th>
+                                        <th data-lang="product_table_status_header">الحالة</th>
+                                        <th data-lang="product_table_actions_header">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="card" style="margin-bottom: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title" data-lang="sales_today_title">المبيعات اليوم</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title" data-lang="recent_sales_title">أحدث المبيعات</h3>
+                                <a href="#" class="view-all" id="viewAllSales" data-lang="view_all">عرض الكل</a>
+                            </div>
+                            <ul class="sales-list" id="recentSalesList">
+                                </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="position: fixed; bottom: 30px; left: 30px;">
+                    <button class="btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i>
+                        <span data-lang="add_product_button">إضافة منتج جديد</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="dashboard" id="productsPage" style="display: none;">
+                <h2 class="section-title" data-lang="products_management_title">إدارة المنتجات</h2>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" data-lang="all_products_title">جميع المنتجات</h3>
+                        <div>
+                            <input type="text" placeholder="ابحث عن منتج..." id="productSearch" class="form-control" style="width: 200px; display: inline-block;" data-lang-placeholder="search_product_placeholder">
+                            <button class="btn-primary" id="addNewProductBtn">
+                                <i class="fas fa-plus"></i>
+                                <span data-lang="add_product_button">إضافة منتج</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-lang="product_table_product_header">المنتج</th>
+                                    <th data-lang="product_table_barcode_header">الباركود</th>
+                                    <th data-lang="product_table_price_header">السعر (MRU)</th>
+                                    <th data-lang="product_table_quantity_header">الكمية</th>
+                                    <th data-lang="product_table_location_header">المكان</th>
+                                    <th data-lang="product_table_status_header">الحالة</th>
+                                    <th data-lang="product_table_actions_header">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allProductsTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard" id="salesPage" style="display: none;">
+                <h2 class="section-title" data-lang="sales_management_title">إدارة المبيعات</h2>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" data-lang="sales_log_title">سجل المبيعات</h3>
+                        <div>
+                            <input type="date" id="salesDateFilter" class="form-control" style="width: 200px; display: inline-block;">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-lang="sale_table_product_header">المنتج</th>
+                                    <th data-lang="sale_table_quantity_header">الكمية</th>
+                                    <th data-lang="sale_table_price_header">السعر (MRU)</th>
+                                    <th data-lang="sale_table_user_header">المستخدم</th>
+                                    <th data-lang="sale_table_date_header">التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard" id="reportsPage" style="display: none;">
+                <h2 class="section-title" data-lang="reports_title">التقارير والإحصائيات</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-primary">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalRevenue">0 MRU</h3>
+                            <p data-lang="total_revenue_stat">إجمالي الإيرادات</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalItemsSold">0</h3>
+                            <p data-lang="total_items_sold_stat">إجمالي القطع المباعة</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="averageSale">0 MRU</h3>
+                            <p data-lang="average_sale_stat">متوسط قيمة المبيعات</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-lang="sales_stats_title">إحصائيات المبيعات</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="reportsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-lang="top_products_title">أفضل المنتجات مبيعاً</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="topProductsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard" id="settingsPage" style="display: none;">
+                <h2 class="section-title" data-lang="settings_title">الإعدادات</h2>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" data-lang="system_settings_title">إعدادات النظام</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="shopName" data-lang="shop_name_label">اسم المحل</label>
+                            <input type="text" id="shopName" class="form-control" value="متجري">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="shopAddress" data-lang="shop_address_label">عنوان المحل</label>
+                            <input type="text" id="shopAddress" class="form-control" value="نواكشوط، موريتانيا">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lowStockThreshold" data-lang="low_stock_threshold_label">حد التنبيه للمخزون المنخفض</label>
+                            <input type="number" id="lowStockThreshold" class="form-control" value="5" min="1">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn-primary" id="saveSettings" data-lang="save_settings_button">حفظ الإعدادات</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3 class="card-title" data-lang="data_backup_title">نسخ احتياطي للبيانات</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p data-lang="data_backup_text">يمكنك عمل نسخة احتياطية من جميع بيانات النظام أو استعادتها من نسخة سابقة.</p>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn-primary" id="backupData">
+                                <i class="fas fa-download"></i>
+                                <span data-lang="download_backup_button">تنزيل نسخة احتياطية</span>
+                            </button>
+                            <button type="button" class="action-btn btn-edit" id="restoreData">
+                                <i class="fas fa-upload"></i>
+                                <span data-lang="restore_data_button">استعادة بيانات</span>
+                            </button>
+                            <input type="file" id="restoreFile" accept=".json" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3 class="card-title" data-lang="language_settings_title">إعدادات اللغة</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="languageSelect" data-lang="select_language_label">اختر اللغة</label>
+                            <select id="languageSelect" class="form-control">
+                                <option value="ar">العربية</option>
+                                <option value="en">English</option>
+                                <option value="fr">Français</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-lang="add_product_title">إضافة منتج جديد</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    <div class="form-group">
+                        <label for="productName" data-lang="product_name_label">اسم المنتج</label>
+                        <input type="text" id="productName" class="form-control" placeholder="أدخل اسم المنتج" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="productBarcode" data-lang="product_barcode_label">الباركود (اختياري)</label>
+                        <input type="text" id="productBarcode" class="form-control" placeholder="امسح الباركود أو أدخله يدوياً">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productDescription" data-lang="product_description_label">وصف المنتج (اختياري)</label>
+                        <textarea id="productDescription" class="form-control" rows="3" placeholder="أدخل وصفاً للمنتج"></textarea>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="productPrice" data-lang="product_price_label">السعر (MRU)</label>
+                            <input type="number" id="productPrice" class="form-control" min="0" step="0.01" placeholder="0.00" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productQuantity" data-lang="product_quantity_label">الكمية المتاحة</label>
+                            <input type="number" id="productQuantity" class="form-control" min="0" placeholder="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="shelfLocation" data-lang="shelf_location_label">موقع التخزين</label>
+                        <input type="text" id="shelfLocation" class="form-control" placeholder="مثال: رف A2" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productImage" data-lang="product_image_label">صورة المنتج (اختياري)</label>
+                        <input type="file" id="productImage" class="form-control" accept="image/*">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="action-btn btn-delete" id="cancelAddProduct" data-lang="cancel_button">إلغاء</button>
+                        <button type="submit" class="btn-primary" data-lang="save_button">حفظ المنتج</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="editProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-lang="edit_product_title">تعديل المنتج</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <input type="hidden" id="editProductId">
+                    <div class="form-group">
+                        <label for="editProductName" data-lang="product_name_label">اسم المنتج</label>
+                        <input type="text" id="editProductName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProductBarcode" data-lang="product_barcode_label">الباركود (اختياري)</label>
+                        <input type="text" id="editProductBarcode" class="form-control" placeholder="امسح الباركود أو أدخله يدوياً">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editProductDescription" data-lang="product_description_label">وصف المنتج (اختياري)</label>
+                        <textarea id="editProductDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="editProductPrice" data-lang="product_price_label">السعر (MRU)</label>
+                            <input type="number" id="editProductPrice" class="form-control" min="0" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editProductQuantity" data-lang="product_quantity_label">الكمية المتاحة</label>
+                            <input type="number" id="editProductQuantity" class="form-control" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editShelfLocation" data-lang="shelf_location_label">موقع التخزين</label>
+                        <input type="text" id="editShelfLocation" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="action-btn btn-delete" id="cancelEditProduct" data-lang="cancel_button">إلغاء</button>
+                        <button type="submit" class="btn-primary" data-lang="save_changes_button">حفظ التعديلات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="sellProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-lang="sell_product_title">بيع المنتج</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="sellProductForm">
+                    <input type="hidden" id="sellProductId">
+                    <div class="form-group">
+                        <label for="sellProductName" data-lang="product_name_label">اسم المنتج</label>
+                        <input type="text" id="sellProductName" class="form-control" readonly>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="sellProductPrice" data-lang="unit_price_label">سعر الوحدة (MRU)</label>
+                            <input type="number" id="sellProductPrice" class="form-control" readonly>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="availableQuantity" data-lang="available_quantity_label">الكمية المتاحة</label>
+                            <input type="number" id="availableQuantity" class="form-control" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sellQuantity" data-lang="sell_quantity_label">الكمية المراد بيعها</label>
+                        <input type="number" id="sellQuantity" class="form-control" min="1" value="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="totalAmount" data-lang="total_amount_label">المبلغ الإجمالي (MRU)</label>
+                        <input type="number" id="totalAmount" class="form-control" readonly>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="action-btn btn-delete" id="cancelSellProduct" data-lang="cancel_button">إلغاء</button>
+                        <button type="submit" class="btn-primary" data-lang="confirm_sale_button">تأكيد البيع</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <input type="text" id="barcodeInput" style="position: absolute; left: -9999px;">
+    
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script>
+        // بيانات التطبيق
+        let users = [];
+        let products = [];
+        let sales = [];
+        let settings = {};
+        let currentUser = null;
+        let currentLang = 'ar';
+
+        // عناصر DOM
+        const loginPage = document.getElementById('loginPage');
+        const appContainer = document.getElementById('appContainer');
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const userWelcome = document.getElementById('userWelcome');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const pages = document.querySelectorAll('.dashboard');
+        const menuItems = document.querySelectorAll('.menu-item');
+        const addProductBtn = document.getElementById('addProductBtn');
+        const addProductModal = document.getElementById('addProductModal');
+        const editProductModal = document.getElementById('editProductModal');
+        const sellProductModal = document.getElementById('sellProductModal');
+        const closeModalBtns = document.querySelectorAll('.close-modal');
+        const cancelAddProductBtn = document.getElementById('cancelAddProduct');
+        const cancelEditProductBtn = document.getElementById('cancelEditProduct');
+        const cancelSellProductBtn = document.getElementById('cancelSellProduct');
+        const addProductForm = document.getElementById('addProductForm');
+        const editProductForm = document.getElementById('editProductForm');
+        const sellProductForm = document.getElementById('sellProductForm');
+        const productsTableBody = document.getElementById('productsTableBody');
+        const allProductsTableBody = document.getElementById('allProductsTableBody');
+        const salesTableBody = document.getElementById('salesTableBody');
+        const recentSalesList = document.getElementById('recentSalesList');
+        const searchInput = document.getElementById('searchInput');
+        const productSearch = document.getElementById('productSearch');
+        const salesDateFilter = document.getElementById('salesDateFilter');
+        const saveSettingsBtn = document.getElementById('saveSettings');
+        const backupDataBtn = document.getElementById('backupData');
+        const restoreDataBtn = document.getElementById('restoreData');
+        const restoreFile = document.getElementById('restoreFile');
+        const addNewProductBtn = document.getElementById('addNewProductBtn');
+        const barcodeInput = document.getElementById('barcodeInput');
+        const languageSelect = document.getElementById('languageSelect');
+        const menuToggleBtn = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const toggleLanguageBtn = document.getElementById('toggleLanguageBtn');
+
+        const translations = {
+            ar: {
+                login_title: "تسجيل الدخول",
+                login_subtitle: "مرحباً بك في نظام إدارة المخزون",
+                username_label: "اسم المستخدم",
+                password_label: "كلمة المرور",
+                login_button: "تسجيل الدخول",
+                app_title: "المخزون الذكي",
+                app_subtitle: "نظام إدارة متكامل",
+                dashboard_menu: "لوحة التحكم",
+                products_menu: "إدارة المنتجات",
+                sales_menu: "المبيعات",
+                reports_menu: "التقارير والإحصائيات",
+                settings_menu: "الإعدادات",
+                logout_menu: "تسجيل الخروج",
+                search_placeholder: "ابحث عن منتج أو عملية بيع...",
+                dashboard_title: "لوحة تحكم المخزون",
+                total_products_stat: "إجمالي المنتجات",
+                total_sales_stat: "المبيعات اليوم",
+                low_stock_stat: "منتجات منخفضة المخزون",
+                out_of_stock_stat: "منتجات غير متوفرة",
+                recent_products_title: "أحدث المنتجات",
+                view_all: "عرض الكل",
+                product_table_product_header: "المنتج",
+                product_table_price_header: "السعر",
+                product_table_quantity_header: "الكمية",
+                product_table_location_header: "المكان",
+                product_table_status_header: "الحالة",
+                product_table_actions_header: "الإجراءات",
+                sales_today_title: "المبيعات اليوم",
+                recent_sales_title: "أحدث المبيعات",
+                add_product_button: "إضافة منتج جديد",
+                products_management_title: "إدارة المنتجات",
+                all_products_title: "جميع المنتجات",
+                search_product_placeholder: "ابحث عن منتج...",
+                product_table_barcode_header: "الباركود",
+                sales_management_title: "إدارة المبيعات",
+                sales_log_title: "سجل المبيعات",
+                sale_table_product_header: "المنتج",
+                sale_table_quantity_header: "الكمية",
+                sale_table_price_header: "السعر (MRU)",
+                sale_table_user_header: "المستخدم",
+                sale_table_date_header: "التاريخ",
+                reports_title: "التقارير والإحصائيات",
+                total_revenue_stat: "إجمالي الإيرادات",
+                total_items_sold_stat: "إجمالي القطع المباعة",
+                average_sale_stat: "متوسط قيمة المبيعات",
+                sales_stats_title: "إحصائيات المبيعات",
+                top_products_title: "أفضل المنتجات مبيعاً",
+                settings_title: "الإعدادات",
+                system_settings_title: "إعدادات النظام",
+                shop_name_label: "اسم المحل",
+                shop_address_label: "عنوان المحل",
+                low_stock_threshold_label: "حد التنبيه للمخزون المنخفض",
+                save_settings_button: "حفظ الإعدادات",
+                data_backup_title: "نسخ احتياطي للبيانات",
+                data_backup_text: "يمكنك عمل نسخة احتياطية من جميع بيانات النظام أو استعادتها من نسخة سابقة.",
+                download_backup_button: "تنزيل نسخة احتياطية",
+                restore_data_button: "استعادة بيانات",
+                language_settings_title: "إعدادات اللغة",
+                select_language_label: "اختر اللغة",
+                add_product_title: "إضافة منتج جديد",
+                product_name_label: "اسم المنتج",
+                product_barcode_label: "الباركود (اختياري)",
+                product_description_label: "وصف المنتج (اختياري)",
+                product_price_label: "السعر (MRU)",
+                product_quantity_label: "الكمية المتاحة",
+                shelf_location_label: "موقع التخزين",
+                product_image_label: "صورة المنتج (اختياري)",
+                cancel_button: "إلغاء",
+                save_button: "حفظ المنتج",
+                edit_product_title: "تعديل المنتج",
+                save_changes_button: "حفظ التعديلات",
+                sell_product_title: "بيع المنتج",
+                unit_price_label: "سعر الوحدة (MRU)",
+                available_quantity_label: "الكمية المتاحة",
+                sell_quantity_label: "الكمية المراد بيعها",
+                total_amount_label: "المبلغ الإجمالي (MRU)",
+                confirm_sale_button: "تأكيد البيع",
+                status_available: "متوفر",
+                status_low: "كمية قليلة",
+                status_sold: "غير متوفر",
+                action_edit: "تعديل",
+                action_sell: "بيع",
+                action_print: "طباعة",
+                action_delete: "حذف",
+                welcome_message: "مرحباً،",
+                user_role_admin: "مدير النظام",
+                user_role_user: "مستخدم عادي"
+            },
+            en: {
+                login_title: "Login",
+                login_subtitle: "Welcome to the Inventory Management System",
+                username_label: "Username",
+                password_label: "Password",
+                login_button: "Login",
+                app_title: "Smart Inventory",
+                app_subtitle: "Integrated Management System",
+                dashboard_menu: "Dashboard",
+                products_menu: "Product Management",
+                sales_menu: "Sales",
+                reports_menu: "Reports & Analytics",
+                settings_menu: "Settings",
+                logout_menu: "Logout",
+                search_placeholder: "Search for a product or sale...",
+                dashboard_title: "Inventory Dashboard",
+                total_products_stat: "Total Products",
+                total_sales_stat: "Sales Today",
+                low_stock_stat: "Low Stock Products",
+                out_of_stock_stat: "Out of Stock Products",
+                recent_products_title: "Recent Products",
+                view_all: "View All",
+                product_table_product_header: "Product",
+                product_table_price_header: "Price",
+                product_table_quantity_header: "Quantity",
+                product_table_location_header: "Location",
+                product_table_status_header: "Status",
+                product_table_actions_header: "Actions",
+                sales_today_title: "Sales Today",
+                recent_sales_title: "Recent Sales",
+                add_product_button: "Add New Product",
+                products_management_title: "Product Management",
+                all_products_title: "All Products",
+                search_product_placeholder: "Search for a product...",
+                product_table_barcode_header: "Barcode",
+                sales_management_title: "Sales Management",
+                sales_log_title: "Sales Log",
+                sale_table_product_header: "Product",
+                sale_table_quantity_header: "Quantity",
+                sale_table_price_header: "Price (MRU)",
+                sale_table_user_header: "User",
+                sale_table_date_header: "Date",
+                reports_title: "Reports & Analytics",
+                total_revenue_stat: "Total Revenue",
+                total_items_sold_stat: "Total Items Sold",
+                average_sale_stat: "Average Sale",
+                sales_stats_title: "Sales Statistics",
+                top_products_title: "Top Selling Products",
+                settings_title: "Settings",
+                system_settings_title: "System Settings",
+                shop_name_label: "Shop Name",
+                shop_address_label: "Shop Address",
+                low_stock_threshold_label: "Low Stock Threshold",
+                save_settings_button: "Save Settings",
+                data_backup_title: "Data Backup",
+                data_backup_text: "You can back up all system data or restore from a previous backup.",
+                download_backup_button: "Download Backup",
+                restore_data_button: "Restore Data",
+                language_settings_title: "Language Settings",
+                select_language_label: "Select Language",
+                add_product_title: "Add New Product",
+                product_name_label: "Product Name",
+                product_barcode_label: "Barcode (Optional)",
+                product_description_label: "Product Description (Optional)",
+                product_price_label: "Price (MRU)",
+                product_quantity_label: "Available Quantity",
+                shelf_location_label: "Shelf Location",
+                product_image_label: "Product Image (Optional)",
+                cancel_button: "Cancel",
+                save_button: "Save Product",
+                edit_product_title: "Edit Product",
+                save_changes_button: "Save Changes",
+                sell_product_title: "Sell Product",
+                unit_price_label: "Unit Price (MRU)",
+                available_quantity_label: "Available Quantity",
+                sell_quantity_label: "Quantity to Sell",
+                total_amount_label: "Total Amount (MRU)",
+                confirm_sale_button: "Confirm Sale",
+                status_available: "Available",
+                status_low: "Low Stock",
+                status_sold: "Sold Out",
+                action_edit: "Edit",
+                action_sell: "Sell",
+                action_print: "Print",
+                action_delete: "Delete",
+                welcome_message: "Welcome,",
+                user_role_admin: "System Admin",
+                user_role_user: "Standard User"
+            },
+            fr: {
+                login_title: "Connexion",
+                login_subtitle: "Bienvenue dans le système de gestion des stocks",
+                username_label: "Nom d'utilisateur",
+                password_label: "Mot de passe",
+                login_button: "Se connecter",
+                app_title: "Inventaire intelligent",
+                app_subtitle: "Système de gestion intégré",
+                dashboard_menu: "Tableau de bord",
+                products_menu: "Gestion des produits",
+                sales_menu: "Ventes",
+                reports_menu: "Rapports & Statistiques",
+                settings_menu: "Paramètres",
+                logout_menu: "Se déconnecter",
+                search_placeholder: "Rechercher un produit ou une vente...",
+                dashboard_title: "Tableau de bord de l'inventaire",
+                total_products_stat: "Total des produits",
+                total_sales_stat: "Ventes du jour",
+                low_stock_stat: "Produits à faible stock",
+                out_of_stock_stat: "Produits en rupture de stock",
+                recent_products_title: "Produits récents",
+                view_all: "Voir tout",
+                product_table_product_header: "Produit",
+                product_table_price_header: "Prix",
+                product_table_quantity_header: "Quantité",
+                product_table_location_header: "Emplacement",
+                product_table_status_header: "Statut",
+                product_table_actions_header: "Actions",
+                sales_today_title: "Ventes du jour",
+                recent_sales_title: "Ventes récentes",
+                add_product_button: "Ajouter un nouveau produit",
+                products_management_title: "Gestion des produits",
+                all_products_title: "Tous les produits",
+                search_product_placeholder: "Rechercher un produit...",
+                product_table_barcode_header: "Code-barres",
+                sales_management_title: "Gestion des ventes",
+                sales_log_title: "Journal des ventes",
+                sale_table_product_header: "Produit",
+                sale_table_quantity_header: "Quantité",
+                sale_table_price_header: "Prix (MRU)",
+                sale_table_user_header: "Utilisateur",
+                sale_table_date_header: "Date",
+                reports_title: "Rapports & Statistiques",
+                total_revenue_stat: "Revenu total",
+                total_items_sold_stat: "Total des articles vendus",
+                average_sale_stat: "Valeur moyenne des ventes",
+                sales_stats_title: "Statistiques des ventes",
+                top_products_title: "Meilleures ventes",
+                settings_title: "Paramètres",
+                system_settings_title: "Paramètres du système",
+                shop_name_label: "Nom du magasin",
+                shop_address_label: "Adresse du magasin",
+                low_stock_threshold_label: "Seuil de stock faible",
+                save_settings_button: "Enregistrer les paramètres",
+                data_backup_title: "Sauvegarde des données",
+                data_backup_text: "Vous pouvez sauvegarder toutes les données du système ou restaurer à partir d'une sauvegarde précédente.",
+                download_backup_button: "Télécharger la sauvegarde",
+                restore_data_button: "Restaurer les données",
+                language_settings_title: "Paramètres de langue",
+                select_language_label: "Sélectionner la langue",
+                add_product_title: "Ajouter un nouveau produit",
+                product_name_label: "Nom du produit",
+                product_barcode_label: "Code-barres (facultatif)",
+                product_description_label: "Description du produit (facultatif)",
+                product_price_label: "Prix (MRU)",
+                product_quantity_label: "Quantité disponible",
+                shelf_location_label: "Emplacement de l'étagère",
+                product_image_label: "Image du produit (facultatif)",
+                cancel_button: "Annuler",
+                save_button: "Enregistrer le produit",
+                edit_product_title: "Modifier le produit",
+                save_changes_button: "Enregistrer les modifications",
+                sell_product_title: "Vendre un produit",
+                unit_price_label: "Prix unitaire (MRU)",
+                available_quantity_label: "Quantité disponible",
+                sell_quantity_label: "Quantité à vendre",
+                total_amount_label: "Montant total (MRU)",
+                confirm_sale_button: "Confirmer la vente",
+                status_available: "Disponible",
+                status_low: "Faible stock",
+                status_sold: "Épuisé",
+                action_edit: "Modifier",
+                action_sell: "Vendre",
+                action_print: "Imprimer",
+                action_delete: "Supprimer",
+                welcome_message: "Bienvenue,",
+                user_role_admin: "Admin système",
+                user_role_user: "Utilisateur standard"
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('inventory_lang', lang);
+            document.body.className = lang;
+            document.querySelectorAll('[data-lang]').forEach(element => {
+                const key = element.getAttribute('data-lang');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'INPUT' && element.hasAttribute('placeholder')) {
+                        element.placeholder = translations[lang][key];
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+            updateUI();
+        }
+
+        function initApp() {
+            loadData();
+            checkLoginStatus();
+            setupEventListeners();
+            setupCharts();
+            setupBarcodeScanner();
+            const savedLang = localStorage.getItem('inventory_lang') || 'ar';
+            setLanguage(savedLang);
+            languageSelect.value = savedLang;
+        }
+
+        function loadData() {
+            const usersData = localStorage.getItem('inventory_users');
+            const productsData = localStorage.getItem('inventory_products');
+            const salesData = localStorage.getItem('inventory_sales');
+            const settingsData = localStorage.getItem('inventory_settings');
+
+            users = usersData ? JSON.parse(usersData) : [
+                { id: 1, username: 'admin', password: 'admin123', name: 'مدير النظام', role: 'admin' },
+                { id: 2, username: 'user', password: 'user123', name: 'مستخدم عادي', role: 'user' }
+            ];
+
+            products = productsData ? JSON.parse(productsData) : [
+                { id: 1678888999, barcode: '7689012345', name: 'هاتف ذكي - نموذج X', description: 'هاتف ذكي بشاشة 6.5 بوصة', price: 1250, quantity: 15, shelf: 'رف A2', image: null, lowStockAlert: false },
+                { id: 1678889000, barcode: '7689012346', name: 'سماعات لاسلكية', description: 'سماعات بلوتوث عالية الجودة', price: 350, quantity: 3, shelf: 'رف B1', image: null, lowStockAlert: true },
+                { id: 1678889001, barcode: '7689012347', name: 'شاحن سريع', description: 'شاحن سريع بقوة 25 واط', price: 120, quantity: 22, shelf: 'رف C3', image: null, lowStockAlert: false },
+                { id: 1678889002, barcode: '7689012348', name: 'غطاء هاتف', description: 'غطاء واقي للهواتف الذكية', price: 85, quantity: 0, shelf: 'رف D4', image: null, lowStockAlert: false }
+            ];
+
+            sales = salesData ? JSON.parse(salesData) : [
+                { id: 1, productId: 1, productName: 'هاتف ذكي - نموذج X', quantity: 1, price: 1250, total: 1250, userId: 1, userName: 'مدير النظام', date: '2023-05-15 10:30' },
+                { id: 2, productId: 2, productName: 'سماعات لاسلكية', quantity: 2, price: 350, total: 700, userId: 2, userName: 'مستخدم عادي', date: '2023-05-15 11:45' },
+                { id: 3, productId: 3, productName: 'شاحن سريع', quantity: 1, price: 120, total: 120, userId: 1, userName: 'مدير النظام', date: '2023-05-15 13:20' }
+            ];
+
+            settings = settingsData ? JSON.parse(settingsData) : {
+                shopName: 'متجري',
+                shopAddress: 'نواكشوط، موريتانيا',
+                currency: 'MRU',
+                lowStockThreshold: 5
+            };
+
+            if (!usersData) localStorage.setItem('inventory_users', JSON.stringify(users));
+            if (!productsData) localStorage.setItem('inventory_products', JSON.stringify(products));
+            if (!salesData) localStorage.setItem('inventory_sales', JSON.stringify(sales));
+            if (!settingsData) localStorage.setItem('inventory_settings', JSON.stringify(settings));
+        }
+
+        function saveData() {
+            localStorage.setItem('inventory_users', JSON.stringify(users));
+            localStorage.setItem('inventory_products', JSON.stringify(products));
+            localStorage.setItem('inventory_sales', JSON.stringify(sales));
+            localStorage.setItem('inventory_settings', JSON.stringify(settings));
+        }
+
+        function checkLoginStatus() {
+            const loggedInUser = localStorage.getItem('inventory_loggedInUser');
+            if (loggedInUser) {
+                currentUser = JSON.parse(loggedInUser);
+                showApp();
+            } else {
+                showLogin();
+            }
+        }
+
+        function setupEventListeners() {
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            menuItems.forEach(item => {
+                if (item.id !== 'logoutBtn') {
+                    item.addEventListener('click', () => {
+                        const page = item.getAttribute('data-page');
+                        showPage(page);
+                        if (window.innerWidth <= 992) {
+                            sidebar.classList.remove('active');
+                        }
+                    });
+                }
+            });
+            
+            addProductForm.addEventListener('submit', handleAddProduct);
+            editProductForm.addEventListener('submit', handleEditProduct);
+            sellProductForm.addEventListener('submit', handleSellProduct);
+            
+            addProductBtn.addEventListener('click', () => showModal(addProductModal));
+            addNewProductBtn.addEventListener('click', () => showModal(addProductModal));
+            closeModalBtns.forEach(btn => btn.addEventListener('click', closeModals));
+            cancelAddProductBtn.addEventListener('click', closeModals);
+            cancelEditProductBtn.addEventListener('click', closeModals);
+            cancelSellProductBtn.addEventListener('click', closeModals);
+            
+            searchInput.addEventListener('input', handleSearch);
+            productSearch.addEventListener('input', handleProductSearch);
+            salesDateFilter.addEventListener('change', handleSalesFilter);
+            
+            saveSettingsBtn.addEventListener('click', saveSettings);
+            backupDataBtn.addEventListener('click', backupData);
+            restoreDataBtn.addEventListener('click', () => restoreFile.click());
+            restoreFile.addEventListener('change', handleRestoreData);
+            
+            document.getElementById('sellQuantity').addEventListener('input', calculateTotalAmount);
+
+            languageSelect.addEventListener('change', (e) => {
+                setLanguage(e.target.value);
+            });
+            
+            menuToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+
+            toggleLanguageBtn.addEventListener('click', () => {
+                const newLang = currentLang === 'ar' ? 'en' : (currentLang === 'en' ? 'fr' : 'ar');
+                setLanguage(newLang);
+                languageSelect.value = newLang;
+            });
+        }
+
+        function setupCharts() {
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            window.salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                    datasets: [{
+                        label: 'المبيعات الشهرية (MRU)',
+                        data: [12500, 19000, 15300, 17800, 22100, 24300],
+                        borderColor: '#4361ee',
+                        tension: 0.1,
+                        fill: true,
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            const reportsCtx = document.getElementById('reportsChart').getContext('2d');
+            window.reportsChart = new Chart(reportsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+                    datasets: [{
+                        label: 'المبيعات اليومية (MRU)',
+                        data: [3500, 4200, 3800, 5100, 4700, 5900, 6300],
+                        backgroundColor: 'rgba(76, 201, 240, 0.5)',
+                        borderColor: '#4cc9f0',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+            window.topProductsChart = new Chart(topProductsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['هواتف ذكية', 'سماعات', 'شواحن', 'أغطية'],
+                    datasets: [{
+                        data: [45, 25, 20, 10],
+                        backgroundColor: [
+                            '#4361ee',
+                            '#4cc9f0',
+                            '#fca311',
+                            '#e63946'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function setupBarcodeScanner() {
+            document.addEventListener('keydown', (event) => {
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                barcodeInput.focus();
+            });
+
+            let barcodeValue = '';
+            let lastKeyTime = Date.now();
+            const scanTimeout = 50;
+
+            barcodeInput.addEventListener('input', (event) => {
+                const now = Date.now();
+                if (now - lastKeyTime > scanTimeout) {
+                    barcodeValue = '';
+                }
+                barcodeValue += event.data;
+                lastKeyTime = now;
+            });
+
+            barcodeInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter' && barcodeValue.length > 0) {
+                    findProductByBarcode(barcodeValue);
+                    barcodeValue = '';
+                    barcodeInput.value = '';
+                }
+            });
+
+            function findProductByBarcode(barcode) {
+                const product = products.find(p => p.barcode === barcode);
+                if (product) {
+                    showSellProduct(product.id);
+                    showAlert(translations[currentLang].product_scanned_success.replace('{{productName}}', product.name), 'success');
+                } else {
+                    showAlert(translations[currentLang].product_not_found, 'error');
+                }
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('inventory_loggedInUser', JSON.stringify(user));
+                showApp();
+                showAlert(`${translations[currentLang].welcome_message} ${user.name}`, 'success');
+            } else {
+                showAlert(translations[currentLang].invalid_credentials, 'error', loginMessage);
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('inventory_loggedInUser');
+            showLogin();
+        }
+
+        function handleAddProduct(e) {
+            e.preventDefault();
+            const name = document.getElementById('productName').value;
+            const barcode = document.getElementById('productBarcode').value;
+            const description = document.getElementById('productDescription').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const quantity = parseInt(document.getElementById('productQuantity').value);
+            const shelf = document.getElementById('shelfLocation').value;
+            const imageFile = document.getElementById('productImage').files[0];
+            
+            const newProduct = {
+                id: Date.now(),
+                barcode: barcode || null,
+                name,
+                description,
+                price,
+                quantity,
+                shelf,
+                image: null,
+                lowStockAlert: quantity <= settings.lowStockThreshold
+            };
+            
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newProduct.image = e.target.result;
+                    products.push(newProduct);
+                    saveData();
+                    updateUI();
+                    closeModals();
+                    showAlert(translations[currentLang].product_added_success, 'success');
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                products.push(newProduct);
+                saveData();
+                updateUI();
+                closeModals();
+                showAlert(translations[currentLang].product_added_success, 'success');
+            }
+        }
+
+        function handleEditProduct(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editProductId').value);
+            const name = document.getElementById('editProductName').value;
+            const barcode = document.getElementById('editProductBarcode').value;
+            const description = document.getElementById('editProductDescription').value;
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const quantity = parseInt(document.getElementById('editProductQuantity').value);
+            const shelf = document.getElementById('editShelfLocation').value;
+            
+            const productIndex = products.findIndex(p => p.id === id);
+            
+            if (productIndex !== -1) {
+                products[productIndex] = {
+                    ...products[productIndex],
+                    name,
+                    barcode: barcode || null,
+                    description,
+                    price,
+                    quantity,
+                    shelf,
+                    lowStockAlert: quantity <= settings.lowStockThreshold
+                };
+                
+                saveData();
+                updateUI();
+                closeModals();
+                showAlert(translations[currentLang].product_updated_success, 'success');
+            }
+        }
+
+        function handleSellProduct(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('sellProductId').value);
+            const quantity = parseInt(document.getElementById('sellQuantity').value);
+            
+            const productIndex = products.findIndex(p => p.id === id);
+            
+            if (productIndex !== -1 && products[productIndex].quantity >= quantity) {
+                products[productIndex].quantity -= quantity;
+                products[productIndex].lowStockAlert = products[productIndex].quantity <= settings.lowStockThreshold;
+                
+                const sale = {
+                    id: Date.now(),
+                    productId: id,
+                    productName: products[productIndex].name,
+                    quantity,
+                    price: products[productIndex].price,
+                    total: products[productIndex].price * quantity,
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    date: new Date().toLocaleString()
+                };
+                
+                sales.push(sale);
+                saveData();
+                updateUI();
+                closeModals();
+                showAlert(translations[currentLang].sale_recorded_success, 'success');
+            } else {
+                showAlert(translations[currentLang].not_enough_stock, 'error');
+            }
+        }
+
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase();
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(query) || 
+                product.shelf.toLowerCase().includes(query)
+            );
+            
+            renderProductsTable(filteredProducts.slice(0, 5), productsTableBody);
+        }
+
+        function handleProductSearch() {
+            const query = productSearch.value.toLowerCase();
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(query) || 
+                product.shelf.toLowerCase().includes(query)
+            );
+            
+            renderProductsTable(filteredProducts, allProductsTableBody, true);
+        }
+
+        function handleSalesFilter() {
+            const date = salesDateFilter.value;
+            if (!date) {
+                renderSalesTable(sales);
+                return;
+            }
+            
+            const filteredSales = sales.filter(sale => new Date(sale.date).toISOString().startsWith(date));
+            renderSalesTable(filteredSales);
+        }
+
+        function saveSettings() {
+            settings.shopName = document.getElementById('shopName').value;
+            settings.shopAddress = document.getElementById('shopAddress').value;
+            settings.lowStockThreshold = parseInt(document.getElementById('lowStockThreshold').value);
+            
+            products.forEach(product => {
+                product.lowStockAlert = product.quantity <= settings.lowStockThreshold;
+            });
+            
+            saveData();
+            showAlert(translations[currentLang].settings_saved_success, 'success');
+        }
+
+        function backupData() {
+            const data = {
+                users,
+                products,
+                sales,
+                settings,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'inventory-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showAlert(translations[currentLang].backup_created_success, 'success');
+        }
+
+        function handleRestoreData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.users && data.products && data.sales && data.settings) {
+                        users = data.users;
+                        products = data.products;
+                        sales = data.sales;
+                        settings = data.settings;
+                        
+                        saveData();
+                        updateUI();
+                        showAlert(translations[currentLang].data_restored_success, 'success');
+                    } else {
+                        showAlert(translations[currentLang].invalid_backup_file, 'error');
+                    }
+                } catch (error) {
+                    showAlert(translations[currentLang].error_restoring_data, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function calculateTotalAmount() {
+            const price = parseFloat(document.getElementById('sellProductPrice').value);
+            const quantity = parseInt(document.getElementById('sellQuantity').value);
+            
+            if (price && quantity) {
+                document.getElementById('totalAmount').value = (price * quantity).toFixed(2);
+            }
+        }
+
+        function showApp() {
+            loginPage.style.display = 'none';
+            appContainer.style.display = 'flex';
+            userWelcome.textContent = `${translations[currentLang].welcome_message} ${currentUser.name}`;
+            updateUI();
+        }
+
+        function showLogin() {
+            loginPage.style.display = 'flex';
+            appContainer.style.display = 'none';
+            loginForm.reset();
+            loginMessage.innerHTML = '';
+        }
+
+        function showPage(pageId) {
+            pages.forEach(page => {
+                page.style.display = 'none';
+            });
+            
+            document.getElementById(`${pageId}Page`).style.display = 'block';
+            
+            menuItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-page') === pageId) {
+                    item.classList.add('active');
+                }
+            });
+            
+            if (pageId === 'dashboard') {
+                updateDashboard();
+            } else if (pageId === 'products') {
+                renderProductsTable(products, allProductsTableBody, true);
+            } else if (pageId === 'sales') {
+                renderSalesTable(sales);
+            } else if (pageId === 'reports') {
+                updateReports();
+            } else if (pageId === 'settings') {
+                loadSettings();
+            }
+        }
+
+        function updateUI() {
+            updateDashboard();
+            renderProductsTable(products.slice(0, 5), productsTableBody);
+            renderProductsTable(products, allProductsTableBody, true);
+            renderSalesTable(sales);
+            renderRecentSales();
+            updateReports();
+        }
+
+        function updateDashboard() {
+            document.getElementById('totalProducts').textContent = products.length;
+            document.getElementById('totalSales').textContent = sales.filter(sale => {
+                const saleDate = new Date(sale.date);
+                const today = new Date();
+                return saleDate.toDateString() === today.toDateString();
+            }).length;
+            
+            const lowStockCount = products.filter(p => p.lowStockAlert && p.quantity > 0).length;
+            const outOfStockCount = products.filter(p => p.quantity === 0).length;
+            
+            document.getElementById('lowStockCount').textContent = lowStockCount;
+            document.getElementById('outOfStockCount').textContent = outOfStockCount;
+            
+            const dashboardAlerts = document.getElementById('dashboardAlerts');
+            dashboardAlerts.innerHTML = '';
+            
+            const lowStockProducts = products.filter(p => p.lowStockAlert && p.quantity > 0);
+            if (lowStockProducts.length > 0) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-error';
+                alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i><span>${translations[currentLang].low_stock_alert.replace('{{count}}', lowStockProducts.length)}</span>`;
+                dashboardAlerts.appendChild(alert);
+            }
+            
+            const outOfStockProducts = products.filter(p => p.quantity === 0);
+            if (outOfStockProducts.length > 0) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-error';
+                alert.innerHTML = `<i class="fas fa-times-circle"></i><span>${translations[currentLang].out_of_stock_alert.replace('{{count}}', outOfStockProducts.length)}</span>`;
+                dashboardAlerts.appendChild(alert);
+            }
+            
+            renderProductsTable(products.slice(0, 5), productsTableBody);
+            renderRecentSales();
+        }
+
+        function updateReports() {
+            const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalItemsSold = sales.reduce((sum, sale) => sum + sale.quantity, 0);
+            const averageSale = sales.length > 0 ? totalRevenue / sales.length : 0;
+            
+            document.getElementById('totalRevenue').textContent = `${totalRevenue.toFixed(2)} MRU`;
+            document.getElementById('totalItemsSold').textContent = totalItemsSold;
+            document.getElementById('averageSale').textContent = `${averageSale.toFixed(2)} MRU`;
+        }
+
+        function loadSettings() {
+            document.getElementById('shopName').value = settings.shopName;
+            document.getElementById('shopAddress').value = settings.shopAddress;
+            document.getElementById('lowStockThreshold').value = settings.lowStockThreshold;
+        }
+
+        function showModal(modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+            document.body.style.overflow = 'auto';
+        }
+
+        function showAlert(message, type, container = null) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i><span>${message}</span>`;
+            
+            if (container) {
+                container.innerHTML = '';
+                container.appendChild(alert);
+            } else {
+                const dashboardAlerts = document.getElementById('dashboardAlerts');
+                if (dashboardAlerts) {
+                    dashboardAlerts.appendChild(alert);
+                }
+            }
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function showEditProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                document.getElementById('editProductId').value = product.id;
+                document.getElementById('editProductName').value = product.name;
+                document.getElementById('editProductBarcode').value = product.barcode || '';
+                document.getElementById('editProductDescription').value = product.description || '';
+                document.getElementById('editProductPrice').value = product.price;
+                document.getElementById('editProductQuantity').value = product.quantity;
+                document.getElementById('editShelfLocation').value = product.shelf;
+                
+                showModal(editProductModal);
+            }
+        }
+
+        function showSellProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                document.getElementById('sellProductId').value = product.id;
+                document.getElementById('sellProductName').value = product.name;
+                document.getElementById('sellProductPrice').value = product.price;
+                document.getElementById('availableQuantity').value = product.quantity;
+                document.getElementById('sellQuantity').value = 1;
+                document.getElementById('sellQuantity').max = product.quantity;
+                document.getElementById('totalAmount').value = product.price;
+                
+                showModal(sellProductModal);
+            }
+        }
+
+        function deleteProduct(productId) {
+            if (confirm(translations[currentLang].confirm_delete_product)) {
+                products = products.filter(p => p.id !== productId);
+                saveData();
+                updateUI();
+                showAlert(translations[currentLang].product_deleted_success, 'success');
+            }
+        }
+
+        function printProductLabel(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || !product.barcode) {
+                showAlert(translations[currentLang].no_barcode_for_print, 'error');
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            const printContent = `
+                <div id="print-area" style="text-align: center; padding: 10px; direction: ltr;">
+                    <p style="font-size: 14px; font-weight: bold; margin: 5px 0;">${product.name}</p>
+                    <p style="font-size: 12px; margin: 5px 0;">${translations[currentLang].price_label}: ${product.price.toFixed(2)} ${settings.currency}</p>
+                    <svg id="barcode-svg"></svg>
+                    <p style="font-size: 10px; margin-top: 5px;">${settings.shopName}</p>
+                </div>
+            `;
+            
+            printWindow.document.write('<html><head><title>طباعة ملصق</title>');
+            printWindow.document.write('<style>@media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; font-family: sans-serif; } }</style>');
+            printWindow.document.write('<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+
+            printWindow.onload = () => {
+                JsBarcode(printWindow.document.getElementById("barcode-svg"), product.barcode, {
+                    format: "EAN13",
+                    width: 2,
+                    height: 50,
+                    displayValue: true
+                });
+                printWindow.print();
+                printWindow.close();
+            };
+        }
+
+        function renderProductsTable(productsArray, tableBody) {
+            tableBody.innerHTML = '';
+            
+            if (productsArray.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            ${translations[currentLang].no_products_to_display}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            productsArray.forEach(product => {
+                const tr = document.createElement('tr');
+                
+                let statusClass = 'status-available';
+                let statusText = translations[currentLang].status_available;
+                
+                if (product.quantity === 0) {
+                    statusClass = 'status-sold';
+                    statusText = translations[currentLang].status_sold;
+                } else if (product.lowStockAlert) {
+                    statusClass = 'status-low';
+                    statusText = translations[currentLang].status_low;
+                }
+                
+                const productImageSrc = product.image ? product.image : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(product.name) + '&background=e5e7eb&color=6b7280';
+                
+                tr.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            <img src="${productImageSrc}" class="product-img" alt="${product.name} Image">
+                            <div style="margin-right: 10px;">
+                                <div>${product.name}</div>
+                                <small style="color: var(--gray);">${product.description || ''}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${product.barcode || 'لا يوجد'}</td>
+                    <td>${product.price.toFixed(2)} ${settings.currency}</td>
+                    <td>${product.quantity}</td>
+                    <td>${product.shelf}</td>
+                    <td><span class="status ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="action-btn btn-edit" onclick="showEditProduct(${product.id})" title="${translations[currentLang].action_edit}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn btn-sell" onclick="showSellProduct(${product.id})" ${product.quantity === 0 ? 'disabled' : ''} title="${translations[currentLang].action_sell}">
+                            <i class="fas fa-cash-register"></i>
+                        </button>
+                        <button class="action-btn btn-print" onclick="printProductLabel(${product.id})" ${!product.barcode ? 'disabled' : ''} title="${translations[currentLang].action_print}">
+                            <i class="fas fa-print"></i>
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteProduct(${product.id})" title="${translations[currentLang].action_delete}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderSalesTable(salesArray) {
+            salesTableBody.innerHTML = '';
+            
+            if (salesArray.length === 0) {
+                salesTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px;">
+                            ${translations[currentLang].no_sales_to_display}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            salesArray.forEach(sale => {
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${sale.productName}</td>
+                    <td>${sale.quantity}</td>
+                    <td>${sale.total.toFixed(2)} ${settings.currency}</td>
+                    <td>${sale.userName}</td>
+                    <td>${new Date(sale.date).toLocaleString()}</td>
+                `;
+                
+                salesTableBody.appendChild(tr);
+            });
+        }
+
+        function renderRecentSales() {
+            recentSalesList.innerHTML = '';
+            
+            const recentSales = sales.slice(-3).reverse();
+            
+            if (recentSales.length === 0) {
+                recentSalesList.innerHTML = `
+                    <li style="text-align: center; padding: 20px;">
+                        ${translations[currentLang].no_recent_sales}
+                    </li>
+                `;
+                return;
+            }
+            
+            recentSales.forEach(sale => {
+                const li = document.createElement('li');
+                li.className = 'sale-item';
+                
+                li.innerHTML = `
+                    <div class="sale-info">
+                        <h4>${sale.productName}</h4>
+                        <p>${translations[currentLang].sold_by} ${sale.userName} - ${new Date(sale.date).toLocaleString().split(' ')[1]}</p>
+                    </div>
+                    <div class="sale-amount">${sale.total.toFixed(2)} ${settings.currency}</div>
+                `;
+                
+                recentSalesList.appendChild(li);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            initApp();
+        });
+
+        window.showEditProduct = showEditProduct;
+        window.showSellProduct = showSellProduct;
+        window.deleteProduct = deleteProduct;
+        window.printProductLabel = printProductLabel;
+    </script>
+</body>
+</html>
